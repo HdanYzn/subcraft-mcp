@@ -1,0 +1,42 @@
+
+name: Build SubCraft MCP (Windows x64)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build MCP server
+        run: cargo build --locked --release -p subcraft-mcp
+
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          $exe = "target\release\subcraft-mcp.exe"
+          if (!(Test-Path $exe)) {
+            throw "MCP executable was not produced"
+          }
+          Get-Item $exe | Select-Object Name, Length
+
+      - name: Upload MCP executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: subcraft-mcp-windows-x64
+          path: target/release/subcraft-mcp.exe
+          if-no-files-found: error
+          retention-days: 7
